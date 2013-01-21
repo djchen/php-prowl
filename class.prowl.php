@@ -52,13 +52,9 @@ class Prowl {
 		return substr($query, 0, -1);
 	}
 
-	public function add($params) {
+	public function add($fields) {
 		if (empty($this->config['apiKey'])) {
 			throw new Exception('No API key set.');
-		}
-
-		foreach ($params as $key => $value) {
-			$fields[$key] = $value;
 		}
 
 		return $this->request('add', $fields);
