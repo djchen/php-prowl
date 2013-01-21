@@ -28,9 +28,6 @@ class Prowl {
 		foreach ($settings as $setting => $value) {
 			$this->config[$setting] = $value;
 		}
-		if (!defined('LINE_ENDING')) {
-			define('LINE_ENDING', isset($_SERVER['HTTP_USER_AGENT']) ? '<br />' : "\n");
-		}
 	}
 
 	public function getConfig() {
@@ -38,25 +35,26 @@ class Prowl {
 	}
 
 	private function buildQuery($params) {
-		$queryString = '';
+		$query = '';
 		if ($this->config['apiKey'] !== null) {
-			$queryString .= 'apikey=' . $this->config['apiKey'] . '&';
+			$query .= 'apikey=' . $this->config['apiKey'] . '&';
 		} else if ($this->config['apiProviderKey'] !== null) {
-			$queryString .= 'providerkey=' . $this->config['apiProviderKey'] . '&';
+			$query .= 'providerkey=' . $this->config['apiProviderKey'] . '&';
 		}
 
 		if (count($params)) {
 			foreach ($params as $key => $value) {
-				$queryString .= $key . '=' . urlencode($value) . '&';
+				$query .= $key . '=' . urlencode($value) . '&';
 			}
+			rtrim($query, '&');
 		}
 
-		return substr($queryString, 0, -1);
+		return substr($query, 0, -1);
 	}
 
 	public function add($params) {
 		if (empty($this->config['apiKey'])) {
-			throw new Exception('No API key(s) set.');
+			throw new Exception('No API key set.');
 		}
 
 		foreach ($params as $key => $value) {
@@ -64,47 +62,6 @@ class Prowl {
 		}
 
 		return $this->request('add', $fields);
-	}
-	
-	public function verify($key) {
-		$this->setRequestMethod('GET');
-	}
-
-	public function requestToken() {
-		if (empty($this->apiProviderKey)) {
-			throw new Exception("No provider key(s) set.");
-		}
-
-		// Set GET method
-		$this->setRequestMethod('GET');
-
-		$response = $this->request("retrieve/token");
-		if ($response) {
-			if ($response->success["code"] == 200) {
-				return $response->retrieve;
-			} else {
-				throw new Exception("API Request Failed: ".var_dump($response));
-			}
-		}
-	}
-	
-	public function retrieveApiKey($token) {
-		if (empty($this->apiProviderKey)) {
-			throw new Exception("No provider key(s) set.");
-		}
-
-		// Set GET method
-		$this->setRequestMethod("GET");		
-		
-		// Send our request out
-		$response = $this->request("retrieve/apikey",array("token" => $token));
-		if ($response) {	
-			if ($response->success["code"] == 200) {
-				return $response->retrieve['apikey'][0];
-			} else {
-				throw new Exception('API Request Failed: ' . var_dump($response));
-			}
-		}		
 	}
 	
 	private function request($method, $params = null) {
