@@ -21,8 +21,8 @@ class Prowl {
 		'debug' => false
 	);
 
-	public $remainingCalls = 0;
-	public $resetdate = 0;
+	private $remainingCalls = 0;
+	private $resetDate = 0;
 
 	public function __construct($settings) {
 		foreach ($settings as $setting => $value) {
@@ -31,7 +31,10 @@ class Prowl {
 		if (!defined('LINE_ENDING')) {
 			define('LINE_ENDING', isset($_SERVER['HTTP_USER_AGENT']) ? '<br />' : "\n");
 		}
-		print_r($this->config);
+	}
+
+	public function getConfig() {
+		return $this->config;
 	}
 
 	private function buildQuery($params) {
@@ -104,9 +107,9 @@ class Prowl {
 		}		
 	}
 	
-	private function request($endpoint, $params = null) {
+	private function request($method, $params = null) {
 		// Push the request out to the API
-		$url = $this->config['apiUrl'] . $endpoint;		
+		$url = $this->config['apiUrl'] . $method;		
 		$params = $this->buildQuery($params);
 
 		$c = curl_init();
@@ -123,28 +126,26 @@ class Prowl {
 		curl_setopt($c, CURLOPT_CONNECTTIMEOUT, 3);
 		curl_setopt($c, CURLOPT_TIMEOUT, 6);
 
-		$response = simplexml_load_string(curl_exec($c));
-		//$httpCode = curl_getinfo($c, CURLINFO_HTTPCODE);		
-
+		$response = curl_exec($c);
+		curl_close($c);
 		if ($this->config['debug'] === true) {
-			echo 'API URL: ' . LINE_ENDING . $url . LINE_ENDING;
-			echo "<hr />";			
-			if (!empty($params)) {
-				echo 'Payload: ' . LINE_ENDING;			
-				echo var_dump($params);
-				echo '<hr />' . LINE_ENDING;				
-			}
-			echo 'HTTP Header: ' .LINE_ENDING;
-			echo curl_getinfo($c, CURLINFO_HEADER_OUT) . LINE_ENDING;
-			echo '<hr />';			
+			print_r($response);
 		}
 		
-		if (!empty($response_xml->success)) {
-			$this->remainingCalls = $response->success["remaining_calls"];
-			$this->resetDate = $response->success["resetdate"];		
+		$data = simplexml_load_string($response);
+		if (!$data) {
+			throw new Exception('Could not parse response: ' . var_export($response));
 		}
-		curl_close($c);
-		return $response;	
+		
+		if (isset($data->error)) {
+			throw new Exception($data->error);
+		} else if (isset($data->success)) {
+			$this->remainingCalls = $data->success["remaining_calls"];
+			$this->resetDate = $data->success["resetdate"];
+			return true;
+		} else {
+			throw new Exception('Unknown response: ' . var_export($response));
+		}
 	}
 
 }

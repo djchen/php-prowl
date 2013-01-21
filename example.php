@@ -7,7 +7,7 @@ define('LINE_ENDING', isset($_SERVER['HTTP_USER_AGENT']) ? '<br />' : "\n");
 
 try {
 	$config = array(
-		'apiKey' => '',
+		'apiKey' => '', // provide an API key to test
 		'debug' => true
 	);
 	$prowl = new Prowl($config);
@@ -20,10 +20,8 @@ try {
 		'priority'  => 0 // optional
 	);
 
-	$message = $prowl->add($notification);
-	echo var_dump($message) . LINE_ENDING;		
-
-} Catch (Exception $message) {
+	$message = $prowl->add($notification);	
+	
+} catch (Exception $message) {
 	echo 'Exception: ' . $message->getMessage() . LINE_ENDING;
 }
-?>
